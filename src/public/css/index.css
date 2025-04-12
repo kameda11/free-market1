@@ -1,0 +1,40 @@
+/* レイアウト全体 */
+
+.card__thumbnail {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+}
+
+/* 商品カードの外枠 */
+.l-wrapper {
+    display: inline-block;
+    width: 280px;
+    margin: 15px;
+}
+
+/* カードデザイン */
+.card {
+    overflow: hidden;
+    background: #fff;
+}
+
+.card__image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card__title {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+/* カード本文 */
+.card__body {
+    padding: 15px;
+}
