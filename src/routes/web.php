@@ -20,10 +20,12 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::get('/', [UserController::class, 'index'])->name('index');
+Route::get('/', [ItemController::class, 'index'])->name('index');
 Route::get('/ditail/{id}', [ItemController::class, 'show'])->name('detail');
 Route::post('/login', [LoginController::class, 'store'])->name('login');
 Route::get('/email/verify', [UserController::class, 'verifyEmail'])->name('verification.notice')->middleware('auth');
+Route::get('/register', [LoginController::class, 'showRegisterForm'])->name('register.form');
+Route::post('/register', [LoginController::class, 'register'])->name('register');
 
 
 Route::middleware('auth')->group(function () {
@@ -44,18 +46,19 @@ Route::middleware('auth')->group(function () {
 });
 
 
-// 認証メール確認ビュー表示
+// 認証ページ（表示用）
 Route::get('/email/verify', function () {
     return view('auth.verify-email');
 })->middleware('auth')->name('verification.notice');
 
-// 認証リンクアクセス処理（署名付きURLから来たとき）
+// 認証リンククリック後（自動で処理）
+
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill(); // メール認証完了
-    return redirect('/'); // 認証完了後のリダイレクト先（必要に応じて変更）
+    $request->fulfill();
+    return redirect('/profile'); // 認証後の遷移先をお好みで変更
 })->middleware(['auth', 'signed'])->name('verification.verify');
 
-// 再送信リクエスト処理
+// 再送信処理
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
     return back()->with('message', '認証メールを再送しました。');

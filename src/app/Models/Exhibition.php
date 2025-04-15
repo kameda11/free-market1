@@ -16,10 +16,10 @@ class Exhibition extends Model
         'product_image',
         'condition',
         'price',
+        'user_id',
     ];
 
     protected $casts = [
-        'condition' => 'integer',
         'price' => 'integer',
     ];
 

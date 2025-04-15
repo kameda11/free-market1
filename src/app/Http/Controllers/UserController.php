@@ -8,12 +8,23 @@ use App\Models\User;
 use App\Models\Exhibition;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use App\Models\Address;
+use App\Http\Requests\ProfileRequest;
+use App\Http\Requests\AddressRequest;
 
 class UserController extends Controller
 {
+    //public function index()
+    //{
+    // $exhibitions = Exhibition::all();
+    // return view('index', compact('exhibitions'));
+    // }
+
     public function index()
     {
+        // Exhibitionモデルからすべての出品データを取得
         $exhibitions = Exhibition::all();
+
+        // ビューに渡す
         return view('index', compact('exhibitions'));
     }
 
@@ -27,16 +38,8 @@ class UserController extends Controller
         return view('profile', compact('user', 'address', 'exhibitions', 'purchases'));
     }
 
-    public function updateProfile(Request $request)
+    public function updateProfile(ProfileRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'post_code' => 'required|string|max:10',
-            'address' => 'required|string|max:255',
-            'building' => 'nullable|string|max:255',
-        ]);
-
         $user = auth()->user();
 
         // ユーザー名の更新
@@ -44,18 +47,18 @@ class UserController extends Controller
 
         // プロフィール画像のアップロード
         if ($request->hasFile('profile_image')) {
-            if ($user->profile_image && Storage::exists('public/profiles/' . $user->profile_image)) {
-                Storage::delete('public/profiles/' . $user->profile_image);
-            }
             $path = $request->file('profile_image')->store('profiles', 'public');
-            $user->profile_image = $path;
+
+            // ユーザーに紐づく profile を取得（なければ作成）
+            $profile = $user->profile ?: new \App\Models\Profile();
+            $profile->user_id = $user->id;
+            $profile->profile_image = $path;
+            $profile->save();
         }
 
-        $user->save();
-
         // 住所の更新（Addressモデルへ）
-        $address = $user->address ?? new Address(['user_id' => $user->id]);
-        $address->user_id = $user->id;
+        $address = new Address();
+        $address->user_id = auth()->id();
         $address->name = $request->input('name');
         $address->post_code = $request->input('post_code');
         $address->address = $request->input('address');
@@ -79,15 +82,8 @@ class UserController extends Controller
         return view('edit', compact('user'));
     }
 
-    public function updateAddress(Request $request)
+    public function updateAddress(AddressRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'post_code' => 'required|string|max:10',
-            'address' => 'required|string|max:255',
-            'building' => 'nullable|string|max:255',
-        ]);
-
         $address = auth()->user()->address; // ログインユーザーに紐づく住所を更新
 
         // ユーザーが住所を持っていない場合、新しく作成する
@@ -96,7 +92,7 @@ class UserController extends Controller
             $address->user_id = auth()->id();
         }
 
-        $address->update($validated);
+        $address->update($request->validated());
 
         return redirect()->route('purchase.confirm', [
             'id' => session('purchase_item_id'),

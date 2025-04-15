@@ -9,7 +9,7 @@
 
     <div class="product-detail">
         <h2>{{ $exhibition->name }}</h2>
-        <img src="{{ asset($exhibition->product_image) }}" alt="商品画像" class="product-image">
+        <img src="{{ asset('storage/' . $exhibition->product_image) }}" alt="image" class="product-image">
         <p>{{ $exhibition->detail }}</p>
         <p>価格：&yen; {{ number_format($exhibition->price) }}</p>
 

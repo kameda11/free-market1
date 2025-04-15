@@ -22,6 +22,7 @@ class CreateExhibitionsTable extends Migration
             $table->tinyInteger('condition')->default(0);
             $table->integer('price')->unsigned()->default(0);
             $table->timestamps();
+            $table->foreignId('user_id')->constrained()->after('id');
         });
     }
 

@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PurchaseRequest;
 use Illuminate\Http\Request;
 use App\Models\Exhibition;
+use App\Models\Favorite;
 use App\Models\Address;
 use App\Models\Purchase;
 use App\Models\Comment;
+use App\Http\Requests\ExhibitionRequest;
+use App\Http\Requests\CommentRequest;
+use Illuminate\Support\Facades\Auth;
 
 class ItemController extends Controller
 {
@@ -43,11 +48,16 @@ class ItemController extends Controller
 
     public function index()
     {
-        $cart = session()->get('cart', []);
-        return view('cart.index', compact('cart'));
+        $allExhibitions = Exhibition::all();
+        $favoriteExhibitions = Exhibition::whereIn('id', function ($query) {
+            $query->select('exhibition_id')
+                ->from('favorites')
+                ->where('user_id', Auth::id());
+        })->get();
+        return view('index', compact('allExhibitions', 'favoriteExhibitions'));
     }
 
-    public function confirm(Request $request)
+    public function confirm(PurchaseRequest $request)
     {
         $product = Exhibition::findOrFail($request->item_id);
         $quantity = $request->quantity;
@@ -70,40 +80,34 @@ class ItemController extends Controller
         return view('sell'); // sell.blade.phpを表示
     }
 
-    public function store(Request $request)
+    public function store(ExhibitionRequest $request)
     {
-        // バリデーション
-        $validated = $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'category' => 'required|string|max:255',
-            'condition' => 'required|string|max:255',
-            'name' => 'required|string|max:255',
-            'brand' => 'nullable|string|max:255',
-            'description' => 'required|string|max:1000',
-            'price' => 'required|integer|min:0',
-        ]);
-
-        // 画像を保存
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
-            $validated['image_path'] = $path;
         }
 
-        // 商品保存
-        Product::create($validated);
+        // バリデーション済みデータを取得
+        $validated = $request->validated();
 
-        return redirect()->route('home')->with('success', '商品を出品しました！');
+        // DBに保存する形式に加工
+        if (isset($path)) {
+            $validated['product_image'] = $path; // カラム名に合わせる
+        }
+
+        $validated['user_id'] = auth()->id();
+
+        // ユーザーIDも追加（もし必要なら）
+        $validated['user_id'] = auth()->id();
+
+        // 商品を保存
+        Exhibition::create($validated);
+
+        return redirect()->route('index')->with('success', '商品を出品しました！');
     }
 
-    public function storeComment(Request $request)
+    public function storeComment(CommentRequest $request)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'user_name' => 'required|max:255',
-            'comment' => 'required|max:500',
-        ]);
-
-        Comment::create($request->only('product_id', 'user_name', 'comment'));
+        Comment::create($request->validated());
 
         return back()->with('success', 'コメントを投稿しました！');
     }
